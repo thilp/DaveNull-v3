@@ -12,7 +12,7 @@ version 0.001
 
 # AUTHOR
 
-Thibaut Le Page <thilp \* cpan.org>
+Thibaut Le Page <thilp@cpan.org>
 
 # COPYRIGHT AND LICENSE
 
