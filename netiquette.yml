@@ -1,0 +1,73 @@
+--- # Formally defines netiquette rules every email must apply
+
+globals:
+    max-width: &maxwidth 72
+
+grammar-rules:
+    tags: "( \\[ <tag-id> \\] ){2}"
+    tag-id: "[A-Z0-9_+/-]+"
+    object: ".+"
+
+    login: "[a-z0-9-]{2,6} _ [a-z0-9-]"
+    name: "[A-Za-z'-]+"
+    epita-mail: "<login> @ epita \\. fr"
+
+mime-structures: # need a "Content-Type:" header (or mail is rejected)
+    - descr: "plaintext"
+      structure:
+          - "text/plain"
+    - descr: "plaintext with attachments"
+      structure:
+          - "multipart/mixed":
+              - "text/plain"
+              - "*"
+
+headers:
+
+    max-width: *maxwidth
+
+    Subject:
+        required: 1
+        grammar: "^ <tags> \\h <object> $"
+
+    From:
+        required: 1
+        grammar: "( <login> | <name> \\h <name> | <epita-mail> )"
+
+body:
+
+    block-separator: "^ $" # empty line
+
+    blocks: # uses Dave's blocks formalism
+
+        std:
+            max-width: *maxwidth
+            exceptions:
+                - name: "line without space"
+                  grammar: "^ \\H+ $"
+                  max-width: ~
+
+        quoting:
+            grammar: "^ >"
+            max-width: 80
+            exceptions:
+                - name: "quote attribution"
+                  grammar: "^ (?<! [>\\h] ) .+ : $"
+                  position: "top"
+            branch-on:
+                std:     "> \\  <this> $"
+                quoting: "> <this> $" # no space after ">" here
+
+        signature:
+            max-height: 5
+            max-width: *maxwidth
+            exceptions:
+                - name: "signature introduction"
+                  grammar: " ^ -- \\  $ "
+                  position: "top"
+                  required: 1
+
+    chaining: | # how can these blocks be combined?
+        ( <std> | <quoting> )*
+        <std>
+        <signature>
