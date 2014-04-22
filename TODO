@@ -1,0 +1,2 @@
+(A) Implement missing critical parts
+(B) Automate no-dependency script build (App::FatPacker, App::Packer::PAR) with dzil
