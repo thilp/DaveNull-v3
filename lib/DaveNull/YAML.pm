@@ -8,6 +8,7 @@ use warnings;
 
 use YAML::XS;
 use DaveNull::YAML::Validate 'validate';
+use DaveNull::YAML::Grammars;
 
 =head1 SYNOPSIS
 
@@ -54,7 +55,9 @@ sub new {
     $class = ref $class if ref $class;
     my $self = YAML::XS::LoadFile($filename);
     validate($self, $expected);
-    return bless $self => $class;
+    bless $self => $class;
+    DaveNull::YAML::Grammars::turn($self);
+    $self;
 }
 
 1;
