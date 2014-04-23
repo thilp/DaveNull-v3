@@ -9,8 +9,6 @@ use warnings;
 use Carp qw/ confess /;
 use Params::Util qw/ _INSTANCE /;
 
-use Data::Dump::Color;
-
 =begin wikidoc
 
 = SYNOPSIS
@@ -26,9 +24,10 @@ transforms its "grammars" into real Perl regexes.
 
 Dave's so-called "grammars" are simply strings that use the same syntax than
 Perl 5 regexes, except for one thing they stole from Perl 6: *subrules*. For
-instance, the following is a Dave grammar matching opening {<a>} HTML tags:
+instance, the following is a Dave grammar matching opening {<a>} HTML tags
+with a ~href~ attribute:
 
-    ^ < a href=<quoted-string> > $
+    ^ < a \h href = <quoted-string> > $
 
 That's a standard Perl 5 regex, except for the {<quoted-string>} part, which
 would be a subrule call in Perl 6 grammars, where it would refer to a
@@ -75,27 +74,38 @@ my $DOCTYPE               = 'DaveNull::YAML';
 my $PRIMARY_RULES_BLKNAME = 'grammar-rules';
 my $GRAMMAR_BLKNAME       = 'grammar';
 my ( $SUBRULE_REGEX, $SUBRULE_REGEX_capture ) = do {
-    my $name_pattern = qr/ [a-z] [a-z_-]* (?<=[a-z]) /xi;
+    my $name_pattern = qr/ [a-z] [a-z_-]* (?<=[a-z_]) /xi;
     ( qr/<$name_pattern>/, qr/<($name_pattern)>/ );
 };
 
 sub turn {
     my $doc = _INSTANCE( shift, $DOCTYPE )
       or confess "Expecting a $DOCTYPE object";
-    my %rules = _harvest_primary_rules($doc);
-    dd \%rules;
+    my %rules = %{ _harvest_primary_rules($doc) };
     _transform_all_grammars($doc, \%rules);
     $doc
 }
 
 sub _isa_hash { ref $_[0] eq 'HASH' || ref $_[0] eq $DOCTYPE }
 
+# Changes a rule name into a subpattern name.
 sub _rename {
     my ($subrule) = @_;
     $subrule =~ y/-/0/; # fortunately i forgot to allow 0-9 in subrule names :D
     return $subrule;
 }
 
+# Replaces all "<subrule>" calls by real named subpattern recursions in
+# $grammar.
+sub _turn {
+    my ($grammar) = @_;
+    $grammar =~ s/ $SUBRULE_REGEX_capture / '(?&' . _rename($1) . ')' /xeg;
+    $grammar;
+}
+
+# Builds a $rules out of the $PRIMARY_RULES_BLKNAME bloc of $doc.
+# $rules->{re}: Pseudo-regexes (strings ready for qr//) for each rule.
+# $rules->{deps}: Lists of dependencies for each rule.
 sub _harvest_primary_rules {
     my $doc = shift;
 
@@ -103,50 +113,91 @@ sub _harvest_primary_rules {
 
     my %primary = %{ $doc->{$PRIMARY_RULES_BLKNAME} };
     delete $doc->{$PRIMARY_RULES_BLKNAME};
-    my %rules;
 
-    # Build the dependency tree so that we can transform them into regexes
-    # in the right order (some may recurse to others).
-    #my %dependencies;
-    #for my $r (%primary) {
-    #    my @subrules = $primary{$r} =~ /$SUBRULE_REGEX/g;
-    #    $dependencies{$r} = \@subrules;
-    #}
-
+    # Build the dependency tree (some rules may recurse to others)
+    my %dependencies =
+      map { $_ => [ _direct_deps( $primary{$_} ) ] } keys %primary;
     # TODO: add unknown dependency detection
-    # TODO: add self-dependency detection
-    # TODO: add mutual dependency detection
+    _resolve_all_deps(\%dependencies);
 
-    for my $r ( keys %primary ) {
-        ( $rules{$r} = $primary{$r} ) =~
-          s/ $SUBRULE_REGEX_capture / '(?&' . _rename($1) . ')' /xeg;
+    my %regexes = map { $_ => _turn($primary{$_}) } keys %primary;
+
+    return { deps => \%dependencies, re => \%regexes };
+}
+
+# Returns a list of all subrules needed in $grammar (not only the ones used
+# directly in $grammar, but the ones these use too, etc.).
+sub _all_deps {
+    my ( $grammar, $rules ) = @_;
+    map { ( $_, @{ $rules->{deps}{$_} } ) } _direct_deps($grammar);
+}
+
+# Returns a list of subrules namely used in $grammar.
+sub _direct_deps {
+    my ($grammar) = @_;
+    if (wantarray) { $grammar =~ /$SUBRULE_REGEX_capture/g }
+    else {
+        my @deps = $grammar =~ /$SUBRULE_REGEX_capture/g;
+        scalar @deps;
     }
-
-    return %rules;
 }
 
-sub _prelude {
-    my $rules = shift;
-    '(?(DEFINE)' . join(
-        '' => map { '(?<' . _rename($_) . '>' . $rules->{$_} . ')' }
-          keys %$rules
-      ) . ')';
+# Simplifies $dependencies so that not only direct dependencies of a "foo"
+# rule, but also all its indirect dependencies, are listed in
+# $dependencies->{foo}.
+sub _resolve_all_deps {
+    my $dependencies = shift;
+    for my $r (keys %$dependencies) {
+        $dependencies->{$r} = [ _resolve_dep($r, $dependencies) ];
+    }
+    return;
 }
 
+# Returns the list of rules on which $rule depends (according to
+# $dependencies->{$rule}.
+# This function is recursive, so it is important that $dependencies be the
+# whole dependency hash.
+# This function support mutual dependencies and self-dependencies.
+# Dies if, for any dependency "foo", $dependencies->{foo} does not exist.
+sub _resolve_dep {
+    my ( $rule, $dependencies, %seen ) = @_;
+
+    exists $dependencies->{$rule}
+      or confess qq{Can't resolve dependencies for unknown rule "$rule"};
+
+    $seen{$rule} = 1;
+    map { $seen{$_} ? () : ( $_, _resolve_dep( $_, $dependencies, %seen ) ) }
+      @{ $dependencies->{$rule} || [] };
+}
+
+# Transform $grammar into a Perl 5 regex, resolving subrule calls using
+# the $rules hash that comes from _harvest_primary_rules.
 sub _transform_grammar {
     my ( $grammar, $rules ) = @_;
-    my @deps = $grammar =~ /$SUBRULE_REGEX_capture/g;
-    if (@deps) {
-        exists $rules->{$_}
-          or confess qq{Using undefined subrule <$_> in "$grammar"}
-          for @deps;
-        $grammar =~ s/ $SUBRULE_REGEX_capture / '(?&' . _rename($1) . ')' /xeg;
-        my $prelude = _prelude($rules);
-        qr/ $prelude $grammar /x;
-    }
-    else { qr/ $grammar /x }
+
+    # Ensure all subrules in $grammar exist
+    exists $rules->{re}{$_} or confess qq{Unknown rule "$_" in "$grammar"}
+      for _direct_deps($grammar);
+
+    my $prelude = _prelude($grammar, $rules);
+    $grammar = _turn($grammar);
+    qr/$prelude $grammar/x;
 }
 
+# Builds a regex-ready string that defines all named subpatterns used in
+# $grammar (these subpatterns must exist in $rules or this function will die).
+sub _prelude {
+    my ( $grammar, $rules ) = @_;
+
+    my %definitions =
+      map { '(?<' . _rename($_) . '>' . $rules->{re}{$_} . ')' => 1 }
+      _all_deps( $grammar, $rules );
+
+    %definitions ? '(?(DEFINE)' . join( '', keys %definitions ) . ')' : '';
+}
+
+# Recursively changes all $GRAMMAR_BLKNAME values under $tree using
+# _transform_grammar.
 sub _transform_all_grammars {
     my ( $tree, $rules ) = @_;
 
