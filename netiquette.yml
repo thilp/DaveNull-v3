@@ -67,6 +67,6 @@ body:
                   required: 1
 
     chaining: | # how can these blocks be combined?
-        ( <std> | <quoting> )*
-        <std>
-        <signature>
+        ( [std] | [quoting] )*
+        [std]
+        [signature]
