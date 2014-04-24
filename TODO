@@ -21,6 +21,14 @@
         . Using the automaton
             . Produce states on-the-fly.
     . Context and error handling
+    . Output
+        . Nice modular design
+            . Drivers that get one "context" object holding all necessary data
+            # Drivers can get YAML-formatted data via command-line options
+            . Drivers configuration file (may be simpler than CL options)
+        . Output for tty (default)
+        . Output for email
+        . Output for loggers
 . Testing
     . Design a clear, efficient and language-agnostic testing architecture
     . Design a valid, minimal email example to be corrupted for tests
