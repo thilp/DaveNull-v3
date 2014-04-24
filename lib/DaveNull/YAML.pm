@@ -6,7 +6,10 @@ use warnings;
 
 # VERSION
 
+use Carp qw/ confess /;
+use Params::Util qw/ _INSTANCE _STRING /;
 use YAML::XS;
+
 use DaveNull::YAML::Validate 'validate';
 use DaveNull::YAML::Grammars;
 
@@ -58,6 +61,36 @@ sub new {
     bless $self => $class;
     DaveNull::YAML::Grammars::turn($self);
     $self;
+}
+
+sub get {
+    my $self  = _INSTANCE( shift, __PACKAGE__ );
+    my $spec  = _STRING(shift);
+    my $class = ref $self;
+    my @keys  = split qr{ / }x, $spec;
+    my %seen;
+    my ( $node, $parent ) = ( $self, '(root node)' );
+    while ( my $k = shift @keys ) {
+
+        if ( exists $node->{$k} ) {
+            $node = $node->{$k};
+            for ( ref $node ) {
+                'HASH'  eq $_ ? $parent = $k :
+                'ARRAY' eq $_ ? return map { bless $_ => $class } @$node :
+                ''      eq $_ ? return $node :
+                confess qq{Unknown datatype for "$k": $_};
+            }
+
+            # Update inherited values
+            my @scalar_params = grep { !ref( $node->{$k} ) } keys %$node;
+            @seen{@scalar_params} = @{$node}{@scalar_params} if @scalar_params;
+        }
+        else {
+            exists $seen{$k}
+              ? return $seen{$k} : confess qq{No key "$k" under "$parent"!};
+        }
+    }
+    confess qq{"$parent" is a block, not a value: won't return it!};
 }
 
 1;

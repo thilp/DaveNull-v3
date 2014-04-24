@@ -1,9 +1,9 @@
 . Basic functionalities
-    . Configuration file usage
+    # Configuration file usage
         # DaveNull::YAML basic structure
         # DaveNull::YAML::Validate
         # DaveNull::YAML::Grammars
-        . DaveNull::YAML parameter access & inheritance mechanism
+        # DaveNull::YAML parameter access & inheritance mechanism
     . Checking email headers
         . One-line, one-occurrence headers
         . One-line, multi-occurrences headers
