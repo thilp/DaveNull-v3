@@ -1,7 +1,6 @@
 --- # Formally defines netiquette rules every email must apply
 
-globals:
-    max-width: &maxwidth 72
+max-width: &maxwidth 72
 
 grammar-rules:
     tags: "( \\[ <tag-id> \\] ){2}"
