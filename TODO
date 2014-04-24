@@ -1,2 +1,29 @@
-(A) Implement missing critical parts
-(B) Automate no-dependency script build (App::FatPacker, App::Packer::PAR) with dzil
+. Basic functionalities
+    . Configuration file usage
+        # DaveNull::YAML basic structure
+        # DaveNull::YAML::Validate
+        # DaveNull::YAML::Grammars
+        . DaveNull::YAML parameter access & inheritance mechanism
+    . Checking email headers
+        . One-line, one-occurrence headers
+        . One-line, multi-occurrences headers
+        . Multi-line, multi-occurrences headers
+    . Checking email MIME structure
+    . Checking email body
+        . Designing automata
+            . Centralized architecture needed.
+            . Minimize classes. Vertices and states should be the same.
+            . Use two kinds of edges: block transitions/block nesting.
+            . Use two kinds of pointers: current state/possibly active states.
+        . Building the automaton
+            . Parsing the "chaining" block
+            . Handling of "exceptions" blocks
+        . Using the automaton
+            . Produce states on-the-fly.
+    . Context and error handling
+. Testing
+    . Design a clear, efficient and language-agnostic testing architecture
+    . Design a valid, minimal email example to be corrupted for tests
+. "No external dependency" script
+    . Proof of concept with App::FatPacker (preferred) or App::Packer::PAR (XS)
+    . Automate packaging
