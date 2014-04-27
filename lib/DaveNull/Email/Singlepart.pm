@@ -68,7 +68,8 @@ sub _build_splitted_body { [ split /\n/ => $_[0]->body ] }
 sub nextline {
     my $self   = _INSTANCE( shift, __PACKAGE__ );
     my $lineno = $self->lineno;
-    my $line   = $self->_splitted_body->[ $lineno ] // return;
+    my $line   = $self->_splitted_body->[ $lineno ];
+    return unless defined $line;
     $self->_set_lineno( $lineno + 1 );
     return $line;
 }
