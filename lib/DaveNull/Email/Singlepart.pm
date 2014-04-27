@@ -1,6 +1,7 @@
 package DaveNull::Email::Singlepart;
 # ABSTRACT: Representation of a non-composite email part.
 
+## no critic (RequireUseStrict)
 # VERSION
 
 use Moo;

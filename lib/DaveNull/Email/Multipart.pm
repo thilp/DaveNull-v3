@@ -1,6 +1,7 @@
 package DaveNull::Email::Multipart;
 # ABSTRACT: Representation of a composite email part.
 
+## no critic (RequireUseStrict)
 # VERSION
 
 use Moo;
