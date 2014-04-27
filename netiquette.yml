@@ -1,6 +1,6 @@
---- # Formally defines netiquette rules every email must apply
+--- # Formally defines netiquette rules every email must follow
 
-max-width: &maxwidth 72
+max-width: 72
 
 grammar-rules:
     tags: "( \\[ <tag-id> \\] ){2}"
@@ -23,8 +23,6 @@ mime-structures: # need a "Content-Type:" header (or mail is rejected)
 
 headers:
 
-    max-width: *maxwidth
-
     Subject:
         required: 1
         grammar: "^ <tags> \\h <object> $"
@@ -40,7 +38,6 @@ body:
     blocks: # uses Dave's blocks formalism
 
         std:
-            max-width: *maxwidth
             exceptions:
                 - name: "line without space"
                   grammar: "^ \\H+ $"
@@ -59,7 +56,6 @@ body:
 
         signature:
             max-height: 5
-            max-width: *maxwidth
             exceptions:
                 - name: "signature introduction"
                   grammar: " ^ -- \\  $ "
