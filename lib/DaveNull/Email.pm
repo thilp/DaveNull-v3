@@ -4,12 +4,13 @@ package DaveNull::Email;
 # VERSION
 
 use Moo::Role;
-use MooX::Types::MooseLike::Base qw/ InstanceOf ArrayRef Str /;
 use Carp qw/ confess /;
-use Params::Util qw/ _STRING _CLASSISA /;
-use Email::MIME 1.910;
-use Safe::Isa;
 use Class::Load qw/ load_class /;
+use Email::MIME 1.910;
+use List::Util qw/ pairfirst pairgrep pairvalues /;
+use MooX::Types::MooseLike::Base qw/ InstanceOf ArrayRef Str /;
+use Params::Util qw/ _STRING _CLASSISA /;
+use Safe::Isa;
 
 use namespace::clean;
 
@@ -106,6 +107,31 @@ has headers => (
 );
 
 sub _build_headers { [ $_[0]->emailmime->header_obj->header_pairs ] }
+
+=method header
+
+Works like L<Email::Simple::Header>'s C<header> method; that is (documentation
+stolen from there):
+
+    my @values = $email->header($header_name);
+    my $first  = $email->header($header_name);
+
+In list context, this returns every value for the named header. In scalar
+context, it returns the first value for the named header.
+
+C<$header_name> is case-insensitive.
+
+=cut
+
+sub header {
+    my ( $self, $wanted ) = ( $_[0], lc $_[1] );
+    wantarray
+      ? pairvalues pairgrep { lc $a eq $wanted } @{ $self->headers }
+      : do {
+        my ( undef, $v ) = pairfirst { lc $a eq $wanted } @{ $self->headers };
+        $v;
+      }
+}
 
 =attr content_type
 

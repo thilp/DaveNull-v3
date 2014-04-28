@@ -29,7 +29,7 @@ test 'subparts' => sub {
 };
 
 run_me({
-    raw_email => do { local $/; <DATA> },
+    raw_mail  => do { local $/; <DATA> },
     structure => [
         'multipart/mixed',
         [ 'multipart/alternative', [ 'text/plain', 'text/html' ] ]

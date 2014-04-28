@@ -30,7 +30,7 @@ test 'nextline and lineno' => sub {
 };
 
 run_me({
-        raw_email         => do { local $/; <DATA> },
+        raw_mail          => do { local $/; <DATA> },
         structure         => ['text/plain'],
         specialized_class => 'DaveNull::Email::Singlepart',
 });
@@ -40,7 +40,7 @@ done_testing();
 __DATA__
 MIME-Version: 1.0
 Sender: FOO@example.com
-Received: Thu, 5 Sep 2013 17:15:57 -0700 (PDT)
+Received: Wed, 23 Apr 2014 01:42:11 -0700 (PDT)
 Date: Fri, 6 Sep 2013 02:15:57 +0200
 Delivered-To: BAR@example.com
 Message-ID: <CAKzV8EwhF_jjfh5O2jwWLUj5rcz7=0yV=wGWSaRXs7Y1YKHZ2Q@example.com>
