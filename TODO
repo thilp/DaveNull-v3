@@ -4,7 +4,7 @@
         # DaveNull::YAML::Validate
         # DaveNull::YAML::Grammars
         # DaveNull::YAML parameter access & inheritance mechanism
-    . Email modelization
+    # Email modelization
     . Checking email headers
         . One-line, one-occurrence headers
         . One-line, multi-occurrences headers
